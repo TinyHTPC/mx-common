@@ -20,5 +20,11 @@ config MACH_MESON6_G18
 	help
           Support for Amlogic Meson6 g18 platform.
 
+config MACH_MESON6_REFG18_ITV05
+	depends on ARCH_MESON6
+	bool "TinyHTPC ITV05 platform"
+	help
+          Support for TinyHTPC ITV05 MX device
+
 
 endif # ARCH_MESON6
