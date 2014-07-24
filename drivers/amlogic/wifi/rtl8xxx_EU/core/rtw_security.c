@@ -1570,18 +1570,6 @@ _func_enter_;
 				prwskey=&stainfo->dot118021x_UncstKey.skey[0];
 			}
 
-#ifdef CONFIG_TDLS	//swencryption
-			{
-				struct	sta_info		*ptdls_sta;
-				ptdls_sta=rtw_get_stainfo(&padapter->stapriv ,&pattrib->dst[0] );
-				if((ptdls_sta != NULL) && (ptdls_sta->tdls_sta_state & TDLS_LINKED_STATE) )
-				{
-					DBG_871X("[%s] for tdls link\n", __FUNCTION__);
-					prwskey=&ptdls_sta->tpk.tk[0];
-				}
-			}
-#endif //CONFIG_TDLS
-
 			prwskeylen=16;
 	
 			for(curfragnum=0;curfragnum<pattrib->nr_frags;curfragnum++){
@@ -1870,8 +1858,7 @@ _func_enter_;
 
 	//compare the mic
 	for(i=0;i<8;i++){
-		if(pframe[hdrlen+8+plen-8+i] != message[hdrlen+8+plen-8+i])
-		{
+		if(pframe[hdrlen+8+plen-8+i] != message[hdrlen+8+plen-8+i]){
 			RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("aes_decipher:mic check error mic[%d]: pframe(%x) != message(%x) \n",
 						i,pframe[hdrlen+8+plen-8+i],message[hdrlen+8+plen-8+i]));
 			DBG_871X("aes_decipher:mic check error mic[%d]: pframe(%x) != message(%x) \n",
@@ -1895,6 +1882,7 @@ u32	rtw_aes_decrypt(_adapter *padapter, u8 *precvframe)
 
 
 	sint 		length;
+	u32	prwskeylen;
 	u8	*pframe,*prwskey;	//, *payload,*iv
 	struct	sta_info		*stainfo;
 	struct	rx_pkt_attrib	 *prxattrib = &((union recv_frame *)precvframe)->u.hdr.attrib;
@@ -1922,17 +1910,12 @@ _func_enter_;
 					goto exit;
 				}
 				prwskey = psecuritypriv->dot118021XGrpKey[prxattrib->key_index].skey;
-				if(psecuritypriv->dot118021XGrpKeyid != prxattrib->key_index)
-				{
-					DBG_871X("not match packet_index=%d, install_index=%d \n"
-					, prxattrib->key_index, psecuritypriv->dot118021XGrpKeyid);
-					res=_FAIL;
-					goto exit;
-				}
+				prwskeylen=16;
 			}
 			else
 			{
 				prwskey=&stainfo->dot118021x_UncstKey.skey[0];
+			        prwskeylen=16;
 			}
 	
 			length= ((union recv_frame *)precvframe)->u.hdr.len-prxattrib->hdrlen-prxattrib->iv_len;
@@ -2783,6 +2766,7 @@ int tdls_verify_mic(u8 *kck, u8 trans_seq,
 
 	if (lnkid == NULL || rsnie == NULL ||
 	    timeoutie == NULL || ftie == NULL){
+		DBG_871X("pointer fail\n");    
 		return 0;
 	}
 	
@@ -2824,10 +2808,10 @@ int tdls_verify_mic(u8 *kck, u8 trans_seq,
 	rx_ftie = ftie+4;
 
 	if (os_memcmp(mic, rx_ftie, 16) == 0) {
-		//Valid MIC
+	//Valid MIC
+	DBG_871X( "[%s] Valid MIC\n", __FUNCTION__);
 		return 1;
 	}
-
 	//Invalid MIC
 	DBG_871X( "[%s] Invalid MIC\n", __FUNCTION__);
 	return 0;

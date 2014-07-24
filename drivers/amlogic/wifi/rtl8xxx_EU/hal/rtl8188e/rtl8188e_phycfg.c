@@ -869,7 +869,7 @@ phy_ConfigMACWithHeaderFile(
 			rtw_IOL_append_WB_cmd(xmit_frame, ptrArray[i], (u8)ptrArray[i+1]);
 		}
 
-		return rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000,0);
+		return rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000);
 	}
 #else
 	for(i = 0 ;i < ArrayLength;i=i+2){ // Add by tynli for 2 column
@@ -1191,7 +1191,7 @@ phy_ConfigBBWithHeaderFile(
 				//RT_TRACE(COMP_INIT, DBG_TRACE, ("The Rtl819XPHY_REGArray_Table[0] is %lx Rtl819XPHY_REGArray[1] is %lx \n",Rtl819XPHY_REGArray_Table[i], Rtl819XPHY_REGArray_Table[i+1]));
 			}
 		
-			ret = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000,0);
+			ret = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000);
 		}
 		#else
 		for(i=0;i<PHY_REGArrayLen;i=i+2)
@@ -1244,7 +1244,7 @@ phy_ConfigBBWithHeaderFile(
 				//RT_TRACE(COMP_INIT, DBG_TRACE, ("The Rtl819XAGCTAB_Array_Table[0] is %lx Rtl819XPHY_REGArray[1] is %lx \n",Rtl819XAGCTAB_Array_Table[i], Rtl819XAGCTAB_Array_Table[i+1]));
 			}
 		
-			ret = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000,0);
+			ret = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000);
 		}
 		#else
 		for(i=0;i<AGCTAB_ArrayLen;i=i+2)
@@ -1644,7 +1644,7 @@ PHY_BBConfig8188E(
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
 	u32	RegVal;
 	u8	TmpU1B=0;
-	u8	value8,CrystalCap;
+	u8	value8;
 
 	phy_InitBBRFRegisterDefinition(Adapter);
 
@@ -1666,11 +1666,23 @@ PHY_BBConfig8188E(
 #endif
 
 #if 0
+		// 2009/10/21 by SD1 Jong. Modified by tynli. Not in Documented in V8.1.
+	if(!IS_NORMAL_CHIP(pHalData->VersionID))
+	{
 #ifdef CONFIG_USB_HCI
-	//To Fix MAC loopback mode fail. Suggested by SD4 Johnny. 2010.03.23.
-	rtw_write8(Adapter, REG_LDOHCI12_CTRL, 0x0f);
-	rtw_write8(Adapter, 0x15, 0xe9);
+		rtw_write8(Adapter, REG_LDOHCI12_CTRL, 0x1f);
+#else
+		rtw_write8(Adapter, REG_LDOHCI12_CTRL, 0x1b);
 #endif
+	}
+	else
+	{
+#ifdef CONFIG_USB_HCI
+		//To Fix MAC loopback mode fail. Suggested by SD4 Johnny. 2010.03.23.
+		rtw_write8(Adapter, REG_LDOHCI12_CTRL, 0x0f);
+		rtw_write8(Adapter, 0x15, 0xe9);
+#endif
+	}
 
 	rtw_write8(Adapter, REG_AFE_XTAL_CTRL+1, 0x80);
 #endif
@@ -1694,10 +1706,6 @@ PHY_BBConfig8188E(
 	// Config BB and AGC
 	//
 	rtStatus = phy_BB8188E_Config_ParaFile(Adapter);
-	
-	// write 0x24[16:11] = 0x24[22:17] = CrystalCap
-	CrystalCap = pHalData->CrystalCap & 0x3F;
-	PHY_SetBBReg(Adapter, REG_AFE_XTAL_CTRL, 0x7ff800, (CrystalCap | (CrystalCap << 6)));
 
 	return rtStatus;
 	
@@ -1896,7 +1904,7 @@ rtl8188e_PHY_ConfigRFWithHeaderFile(
 						rtw_IOL_append_WD_cmd(xmit_frame, pPhyReg->rf3wireOffset, DataAndAddr);
 					}
 				}
-				rtStatus = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000,0);
+				rtStatus = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000);
 			}
 			#else
 			for(i = 0;i<RadioA_ArrayLen; i=i+2)
@@ -1963,7 +1971,7 @@ rtl8188e_PHY_ConfigRFWithHeaderFile(
 						rtw_IOL_append_WD_cmd(xmit_frame, pPhyReg->rf3wireOffset, DataAndAddr);
 					}
 				}
-				rtStatus = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000,0);
+				rtStatus = rtw_IOL_exec_cmds_sync(Adapter, xmit_frame, 1000);
 			}
 			#else
 			for(i = 0;i<RadioB_ArrayLen; i=i+2)
@@ -2546,12 +2554,11 @@ PHY_SetTxPowerLevel8188E(
 	u8	cckPowerLevel[MAX_TX_COUNT], ofdmPowerLevel[MAX_TX_COUNT];// [0]:RF-A, [1]:RF-B
 	u8	BW20PowerLevel[MAX_TX_COUNT], BW40PowerLevel[MAX_TX_COUNT];
 	u8	i=0;
-/*
+
 #if(MP_DRIVER == 1)
-	if (Adapter->registrypriv.mp_mode == 1)
 	return;
 #endif
-*/
+
 	//getTxPowerIndex(Adapter, channel, &cckPowerLevel[0], &ofdmPowerLevel[0]);
 	getTxPowerIndex88E(Adapter, channel, &cckPowerLevel[0], &ofdmPowerLevel[0],&BW20PowerLevel[0],&BW40PowerLevel[0]);
 
@@ -2930,7 +2937,8 @@ PHY_SetBWMode8188E(
 		//pHalData->SetBWModeInProgress= FALSE;
 		pHalData->CurrentChannelBW = tmpBW;
 	}
-	
+	ODM_CmnInfoUpdate(&pHalData->odmpriv,ODM_CMNINFO_BW, pHalData->CurrentChannelBW );
+	ODM_CmnInfoUpdate(&pHalData->odmpriv,ODM_CMNINFO_SEC_CHNL_OFFSET,pHalData->nCur40MhzPrimeSC );
 }
 
 
@@ -2939,11 +2947,6 @@ static void _PHY_SwChnl8192C(PADAPTER Adapter, u8 channel)
 	u8 eRFPath;
 	u32 param1, param2;
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
-
-	if ( Adapter->bNotifyChannelChange )
-	{
-		DBG_871X( "[%s] ch = %d\n", __FUNCTION__, channel );
-	}
 
 	//s1. pre common command - CmdID_SetTxPowerLevel
 	PHY_SetTxPowerLevel8188E(Adapter, channel);

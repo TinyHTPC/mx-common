@@ -212,9 +212,10 @@ struct mp_tx
 	u8 *pallocated_buf;
 	u8 *buf;
 	u32 buf_size, write_size;
-	_thread_hdl_ PktTxThread;
+	_thread_hdl_	PktTxThread;
 };
 
+//#if (MP_DRIVER == 1)
 #if defined(CONFIG_RTL8192C) || defined(CONFIG_RTL8192D) || defined(CONFIG_RTL8723A) || defined(CONFIG_RTL8188E)
 #ifdef CONFIG_RTL8192C
 #include <Hal8192CPhyCfg.h>
@@ -371,6 +372,22 @@ typedef struct _MPT_CONTEXT
 #endif
 //#endif
 
+/* E-Fuse */
+#ifdef CONFIG_RTL8192D
+#define EFUSE_MAP_SIZE		256
+#endif
+#ifdef CONFIG_RTL8192C
+#define EFUSE_MAP_SIZE		128
+#endif
+#ifdef CONFIG_RTL8723A
+#define EFUSE_MAP_SIZE		256
+#endif
+#ifdef CONFIG_RTL8188E
+#define EFUSE_MAP_SIZE		256
+#endif
+#define EFUSE_MAX_SIZE		512
+/* end of E-Fuse */
+
 //#define RTPRIV_IOCTL_MP 					( SIOCIWFIRSTPRIV + 0x17)
 enum {	  
 	WRITE_REG = 1,
@@ -400,7 +417,6 @@ enum {
 	MP_SetRFPathSwh,
 	MP_QueryDrvStats,
 	MP_SetBT,
-	CTA_TEST,
 	MP_NULL,
 };
 
@@ -444,10 +460,9 @@ struct mp_priv
 	u16 antenna_tx;
 	u16 antenna_rx;
 //	u8 curr_rfpath;
-	
+
 	u8 check_mp_pkt;
 
-	u8 bSetTxPower;
 //	uint ForcedDataRate;
 
 	struct wlan_network mp_network;
@@ -705,7 +720,6 @@ extern void	SetContinuousTx(PADAPTER pAdapter, u8 bStart);
 extern void	SetSingleCarrierTx(PADAPTER pAdapter, u8 bStart);
 extern void	SetSingleToneTx(PADAPTER pAdapter, u8 bStart);
 extern void	SetCarrierSuppressionTx(PADAPTER pAdapter, u8 bStart);
-extern void PhySetTxPowerLevel(PADAPTER pAdapter);
 
 extern void	fill_txdesc_for_mp(PADAPTER padapter, struct tx_desc *ptxdesc);
 extern void	SetPacketTx(PADAPTER padapter);
@@ -719,6 +733,8 @@ extern s32	SetPowerTracking(PADAPTER padapter, u8 enable);
 extern void	GetPowerTracking(PADAPTER padapter, u8 *enable);
 
 extern u32	mp_query_psd(PADAPTER pAdapter, u8 *data);
+
+extern u32	rtw_atoi(u8 *s);
 
 
 extern void Hal_SetAntenna(PADAPTER pAdapter);
@@ -748,7 +764,7 @@ extern u8 Hal_ReadRFThermalMeter(PADAPTER pAdapter);
 extern void Hal_SetCCKContinuousTx(PADAPTER pAdapter, u8 bStart);
 extern void Hal_SetOFDMContinuousTx(PADAPTER pAdapter, u8 bStart);
 extern void Hal_ProSetCrystalCap (PADAPTER pAdapter , u32 CrystalCapVal);
-extern void _rtw_mp_xmit_priv(struct xmit_priv *pxmitpriv);
+
 extern void MP_PHY_SetRFPathSwitch(PADAPTER pAdapter ,BOOLEAN bMain);
 
 #endif //_RTW_MP_H_

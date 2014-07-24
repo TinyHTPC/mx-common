@@ -777,11 +777,6 @@ phy_PathA_RxIQK(
 	ODM_SetRFReg(pDM_Odm, RF_PATH_A, RF_RCK_OS, bRFRegOffsetMask, 0x30000 );
 	ODM_SetRFReg(pDM_Odm, RF_PATH_A, RF_TXPA_G1, bRFRegOffsetMask, 0x0000f );
 	ODM_SetRFReg(pDM_Odm, RF_PATH_A, RF_TXPA_G2, bRFRegOffsetMask, 0xf117B );
-	
-	//PA,PAD off
-	ODM_SetRFReg(pDM_Odm, RF_PATH_A, 0xdf, bRFRegOffsetMask, 0x980 );
-	ODM_SetRFReg(pDM_Odm, RF_PATH_A, 0x56, bRFRegOffsetMask, 0x51000 );
-	
 	ODM_SetBBReg(pDM_Odm, rFPGA0_IQK, bMaskDWord, 0x80800000);
 	
 	//IQK setting
@@ -791,7 +786,7 @@ phy_PathA_RxIQK(
 	//path-A IQK setting
 	ODM_SetBBReg(pDM_Odm, rTx_IQK_Tone_A, bMaskDWord, 0x10008c1c);
 	ODM_SetBBReg(pDM_Odm, rRx_IQK_Tone_A, bMaskDWord, 0x30008c1c);
-	ODM_SetBBReg(pDM_Odm, rTx_IQK_PI_A, bMaskDWord, 0x82160c1f);
+	ODM_SetBBReg(pDM_Odm, rTx_IQK_PI_A, bMaskDWord, 0x82160804);
 	ODM_SetBBReg(pDM_Odm, rRx_IQK_PI_A, bMaskDWord, 0x28160000);	
 
 	//LO calibration setting
@@ -843,10 +838,10 @@ phy_PathA_RxIQK(
 	ODM_SetBBReg(pDM_Odm, rRx_IQK, bMaskDWord, 0x01004800);
 
 	//path-A IQK setting
-	ODM_SetBBReg(pDM_Odm, rTx_IQK_Tone_A, bMaskDWord, 0x38008c1c);
-	ODM_SetBBReg(pDM_Odm, rRx_IQK_Tone_A, bMaskDWord, 0x18008c1c);
+	ODM_SetBBReg(pDM_Odm, rTx_IQK_Tone_A, bMaskDWord, 0x30008c1c);
+	ODM_SetBBReg(pDM_Odm, rRx_IQK_Tone_A, bMaskDWord, 0x10008c1c);
 	ODM_SetBBReg(pDM_Odm, rTx_IQK_PI_A, bMaskDWord, 0x82160c05);
-	ODM_SetBBReg(pDM_Odm, rRx_IQK_PI_A, bMaskDWord, 0x28160c1f);	
+	ODM_SetBBReg(pDM_Odm, rRx_IQK_PI_A, bMaskDWord, 0x28160c05);	
 
 	//LO calibration setting
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD, ("LO calibration setting!\n"));
@@ -862,7 +857,6 @@ phy_PathA_RxIQK(
 	//PlatformStallExecution(IQK_DELAY_TIME_88E*1000);
 	ODM_delay_ms(IQK_DELAY_TIME_88E);
 
-        
 	// Check failed
 	regEAC = ODM_GetBBReg(pDM_Odm, rRx_Power_After_IQK_A_2, bMaskDWord);
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("0xeac = 0x%x\n", regEAC));
@@ -873,10 +867,6 @@ phy_PathA_RxIQK(
 	regEA4= ODM_GetBBReg(pDM_Odm, rRx_Power_Before_IQK_A_2, bMaskDWord);
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("0xea4 = 0x%x\n", regEA4));
 
-	//reload RF 0xdf
-	ODM_SetBBReg(pDM_Odm, rFPGA0_IQK, bMaskDWord, 0x00000000);
-	ODM_SetRFReg(pDM_Odm, RF_PATH_A, 0xdf, bRFRegOffsetMask, 0x180 );
-	
 #if 0	
 	if(!(regEAC & BIT28) &&		
 		(((regE94 & 0x03FF0000)>>16) != 0x142) &&
@@ -894,8 +884,6 @@ phy_PathA_RxIQK(
 		ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("Path A Rx IQK fail!!\n"));
 	
 	return result;
-
-
 
 
 }
@@ -1413,8 +1401,6 @@ phy_SimularityCompare_8188E(
 	u1Byte		final_candidate[2] = {0xFF, 0xFF};	//for path A and path B
 	BOOLEAN		bResult = TRUE;
 	BOOLEAN		is2T;
-	s4Byte tmp1 = 0,tmp2 = 0;
-		
 	if( (pDM_Odm->RFType ==ODM_2T2R )||(pDM_Odm->RFType ==ODM_2T3R )||(pDM_Odm->RFType ==ODM_2T4R ))
 		is2T = TRUE;
 	else
@@ -1424,9 +1410,7 @@ phy_SimularityCompare_8188E(
 		bound = 8;
 	else
 		bound = 4;
-		
-	
-	
+
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD, ("===> IQK:phy_SimularityCompare_8188E c1 %d c2 %d!!!\n", c1, c2));
 
 
@@ -1434,27 +1418,7 @@ phy_SimularityCompare_8188E(
 	
 	for( i = 0; i < bound; i++ )
 	{
-//		diff = (result[c1][i] > result[c2][i]) ? (result[c1][i] - result[c2][i]) : (result[c2][i] - result[c1][i]);
-		if((i==1) || (i==3) || (i==5) || (i==7))
-		{
-			if((result[c1][i]& 0x00000200) != 0)
-				tmp1 = result[c1][i] | 0xFFFFFC00; 
-			else
-				tmp1 = result[c1][i];
-
-			if((result[c2][i]& 0x00000200) != 0)
-				tmp2 = result[c2][i] | 0xFFFFFC00; 
-			else
-				tmp2 = result[c2][i];
-		}
-		else
-		{
-			tmp1 = result[c1][i];	
-			tmp2 = result[c2][i];
-		}
-			
-		diff = (tmp1 > tmp2) ? (tmp1 - tmp2) : (tmp2 - tmp1);
-
+		diff = (result[c1][i] > result[c2][i]) ? (result[c1][i] - result[c2][i]) : (result[c2][i] - result[c1][i]);
 		if (diff > MAX_TOLERANCE)
 		{
 			ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("IQK:phy_SimularityCompare_8188E differnece overflow index %d compare1 0x%x compare2 0x%x!!!\n",  i, result[c1][i], result[c2][i]));
@@ -1488,36 +1452,20 @@ phy_SimularityCompare_8188E(
 		}
 		return bResult;
 	}
-	else 
+	else if (!(SimularityBitMap & 0x0F))			//path A OK
 	{
-	
-	   if (!(SimularityBitMap & 0x03))		   //path A TX OK
-	   {
-		   for(i = 0; i < 2; i++)
-			   result[3][i] = result[c1][i];
-	   }
-	
-	   if (!(SimularityBitMap & 0x0c))		   //path A RX OK
-	   {
-		   for(i = 2; i < 4; i++)
-			   result[3][i] = result[c1][i];
-	   }
-	
-	   if (!(SimularityBitMap & 0x30)) //path B TX OK
-	   {
-		   for(i = 4; i < 6; i++)
-			   result[3][i] = result[c1][i];
-	
-	   }
-	
-	   if (!(SimularityBitMap & 0xc0)) //path B RX OK
-	   {
-		   for(i = 6; i < 8; i++)
-			   result[3][i] = result[c1][i];
-	   }
-		   
-		   return FALSE;
+		for(i = 0; i < 4; i++)
+			result[3][i] = result[c1][i];
+		return FALSE;
 	}
+	else if (!(SimularityBitMap & 0xF0) && is2T)	//path B OK
+	{
+		for(i = 4; i < 8; i++)
+			result[3][i] = result[c1][i];
+		return FALSE;
+	}	
+	else		
+		return FALSE;
 	
 }
 
@@ -1571,15 +1519,12 @@ phy_IQCalibrate_8188E(
 	u4Byte	retryCount = 2;
 #else
 #if MP_DRIVER
-	u4Byte	retryCount = 9;
+	const u4Byte	retryCount = 9;
 #else
-	u4Byte	retryCount = 2;
+	const u4Byte	retryCount = 2;
 #endif
 #endif
-if ( *(pDM_Odm->mp_mode) == 1)
-	retryCount = 9;
-else
-	retryCount = 2;	
+
 	// Note: IQ calibration must be performed after loading 
 	// 		PHY_REG.txt , and radio_a, radio_b.txt	
 	
@@ -1809,7 +1754,6 @@ else
 		ODM_SetBBReg(pDM_Odm, rTx_IQK_Tone_A, bMaskDWord, 0x01008c00);		
 		ODM_SetBBReg(pDM_Odm, rRx_IQK_Tone_A, bMaskDWord, 0x01008c00);				
 		
-		
 	}
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD, ("phy_IQCalibrate_8188E() <==\n"));
 	
@@ -1882,7 +1826,7 @@ phy_LCCalibrate_8188E(
 	//4. Set LC calibration begin	bit15
 	ODM_SetRFReg(pDM_Odm, RF_PATH_A, RF_CHNLBW, bMask12Bits, LC_Cal|0x08000);
 
-	ODM_sleep_ms(100);		
+	ODM_delay_ms(100);		
 
 
 	//Restore original situation
@@ -2021,8 +1965,6 @@ phy_APCalibrate_8188E(
 	s4Byte			BB_offset, delta_V, delta_offset;
 
 #if MP_DRIVER == 1
-if ( *(pDM_Odm->mp_mode) == 1)
-{
 #if (DM_ODM_SUPPORT_TYPE == ODM_CE)
 	PMPT_CONTEXT	pMptCtx = &(pAdapter->mppriv.MptCtx);	
 #else
@@ -2030,7 +1972,7 @@ if ( *(pDM_Odm->mp_mode) == 1)
 #endif
 	pMptCtx->APK_bound[0] = 45;
 	pMptCtx->APK_bound[1] = 52;	
-}
+
 #endif
 
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD, ("==>phy_APCalibrate_8188E() delta %d\n", delta));
@@ -2044,10 +1986,9 @@ if ( *(pDM_Odm->mp_mode) == 1)
 // and value will cause RF internal PA to be unpredictably disabled by HW, such that RF Tx signal
 // will disappear after disable/enable card many times on 88CU. RF SD and DD have not find the
 // root cause, so we remove these actions temporarily. Added by tynli and SD3 Allen. 2010.05.31.
-//#if MP_DRIVER != 1
-if (*(pDM_Odm->mp_mode) != 1)
+#if MP_DRIVER != 1
 	return;
-//#endif
+#endif
 	//settings adjust for normal chip
 	for(index = 0; index < PATH_NUM; index ++)
 	{
@@ -2420,11 +2361,11 @@ PHY_IQCalibrate_8188E(
 	#endif
 
 	#if (MP_DRIVER == 1)
-		#if (DM_ODM_SUPPORT_TYPE == ODM_MP)	
-		PMPT_CONTEXT	pMptCtx = &(pAdapter->MptCtx);	
-		#else// (DM_ODM_SUPPORT_TYPE == ODM_CE)
-		PMPT_CONTEXT	pMptCtx = &(pAdapter->mppriv.MptCtx);		
-		#endif	
+	#if (DM_ODM_SUPPORT_TYPE == ODM_MP)	
+	PMPT_CONTEXT	pMptCtx = &(pAdapter->MptCtx);	
+	#else// (DM_ODM_SUPPORT_TYPE == ODM_CE)
+	PMPT_CONTEXT	pMptCtx = &(pAdapter->mppriv.MptCtx);		
+	#endif	
 	#endif//(MP_DRIVER == 1)
 #endif	
 
@@ -2472,12 +2413,9 @@ PHY_IQCalibrate_8188E(
 #endif		
 
 #if MP_DRIVER == 1	
-if (*(pDM_Odm->mp_mode) == 1)
-{
 	bStartContTx = pMptCtx->bStartContTx;
 	bSingleTone = pMptCtx->bSingleTone;
 	bCarrierSuppression = pMptCtx->bCarrierSuppression;	
-}
 #endif
 	
 	// 20120213<Kordan> Turn on when continuous Tx to pass lab testing. (required by Edlu)
@@ -2523,10 +2461,7 @@ if (*(pDM_Odm->mp_mode) == 1)
 		result[0][i] = 0;
 		result[1][i] = 0;
 		result[2][i] = 0;
-		if((i==0) ||(i==2) || (i==4)  || (i==6))
-			result[3][i] = 0x100;
-		else
-			result[3][i] = 0;
+		result[3][i] = 0;
 	}
 	final_candidate = 0xff;
 	bPathAOK = FALSE;
@@ -2589,7 +2524,6 @@ if (*(pDM_Odm->mp_mode) == 1)
 			}
 			else
 			{
-		/*
 				for(i = 0; i < 8; i++)
 					RegTmp += result[3][i];
 
@@ -2597,8 +2531,6 @@ if (*(pDM_Odm->mp_mode) == 1)
 					final_candidate = 3;			
 				else
 					final_candidate = 0xFF;
-		*/
-				final_candidate = 3;
 			}
 		}
 	}
@@ -2729,12 +2661,9 @@ PHY_LCCalibrate_8188E(
 
 
 #if MP_DRIVER == 1	
-if (*(pDM_Odm->mp_mode) == 1)
-{
 	bStartContTx = pMptCtx->bStartContTx;
 	bSingleTone = pMptCtx->bSingleTone;
 	bCarrierSuppression = pMptCtx->bCarrierSuppression;	
-}
 #endif
 
 

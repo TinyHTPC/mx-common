@@ -28,7 +28,7 @@
 *                           RadioA_1T.TXT
 ******************************************************************************/
 
-HAL_STATUS
+void
 ODM_ReadAndConfig_RadioA_1T_8188E(
 	IN   PDM_ODM_T  pDM_Odm
 );
